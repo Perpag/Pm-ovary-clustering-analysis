@@ -6,6 +6,9 @@ library(reshape2)
 library(Seurat)
 library(SeuratData)
 library(SeuratDisk)
+library(stringr)
+library(ggnewscale)
+
 
 #In R Studio
 
@@ -76,6 +79,8 @@ Convert("mm_pituitary_gland.h5Seurat", dest = "h5ad")
 
 #In python
 
+cd samap_directory
+
 python3
 
 from samap.mapping import SAMAP
@@ -112,34 +117,243 @@ df.to_csv('mapping_table_sea_star_vs_x_species.csv')
 
 #In R Studio
 
+#Sankey plots for all apart from for human fetal ovary
+
 df <- load mapping scores
-data1 <- melt(df)
-data1$X <- as.factor(data1$X)
+data <- melt(df)
+data$X <- as.factor(data$X)
+dat <- data %>%
+  transmute(
+    species_left  = as.character(X),
+    species_right = as.character(variable),
+    value         = suppressWarnings(as.numeric(value))
+  ) 
 
-threshold <- 0.1  # threshold value
-data1 <- filter(data1, data1$value >= threshold)
 
-# Transform the data for ggalluvial
-alluvial_data <- data1 %>%
-  mutate(species1 = factor(data1$X, levels = unique(data1$X)),
-         species2 = factor(data1$variable, levels = unique(data1$variable)))
+pm_left  <- mean(grepl("_pm", dat$species_left),  na.rm = TRUE)
+pm_right <- mean(grepl("_pm", dat$species_right), na.rm = TRUE)
 
-ggplot(alluvial_data,
-       aes(axis1 = species1, axis2 = species2, y = data1$value)) +
-  geom_alluvium(aes(fill = data1$value), width = 0.25) +
-  geom_stratum(width = 0.25, fill = "white", color = "black") +
-  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
-  scale_x_discrete(limits = c("Species 1", "Species 2"), expand = c(0.15, 0.05)) +
-  scale_fill_gradient(low = "lightblue", high = "blue", name = "Alignment Score")+
-  theme_minimal()+theme(
-    panel.grid.major = element_blank(),  # Remove major grid lines
-    panel.grid.minor = element_blank()   # Remove minor grid lines
-  )+theme(
-    axis.text.x = element_blank(),  # Remove x-axis labels
-    axis.ticks.x = element_blank(), # Remove x-axis ticks
-    axis.text.y = element_blank(),  # Remove y-axis labels
-    axis.ticks.y = element_blank()  # Remove y-axis ticks
+if (is.finite(pm_left) && is.finite(pm_right) && pm_left < pm_right) {
+  tmp <- dat$species_left
+  dat$species_left  <- dat$species_right
+  dat$species_right <- tmp
+}
+
+
+left_num <- as.integer(stringr::str_extract(dat$species_left, "\\d+$"))
+
+dat <- dat %>%
+  mutate(
+    cluster_left = case_when(
+      left_num %in% 1:4   ~ "epithelium",
+      left_num %in% 5:8   ~ "follicle I",
+      left_num %in% 9:12  ~ "follicle II",
+      left_num %in% 13:14 ~ "germ cell nest",
+      left_num %in% 15:19 ~ "oocytes",
+      left_num == 20      ~ "neurons",
+      left_num %in% 21:22 ~ "muscles",
+      left_num %in% 23:25 ~ "follicle III",
+      left_num %in% 26:27 ~ "immune",
+      TRUE ~ "Unknown"
+    )
   )
 
+
+cluster_cols <- c(
+  "epithelium"     = "#63A8FF",
+  "follicle I"     = "#F27676",
+  "follicle II"    = "#F4A300",  
+  "germ cell cyst" = "#21FF00",  
+  "oocytes"        = "#009F72",
+  "neurons"        = "#FFEF00",
+  "muscles"        = "#9B6BFF",
+  "follicle III"   = "#FFB6C1",
+  "immune"         = "#ADD8E6",
+  "unknown"        = "grey70"
+)
+
+# Left boxes use a per-stratum palette derived from cluster_cols
+stratum_colors <- dat %>%
+  distinct(species_left, cluster_left) %>%
+  mutate(color = cluster_cols[as.character(cluster_left)]) %>%
+  { setNames(.$color, .$species_left) }
+
+
+dat$flow_id <- seq_len(nrow(dat))
+
+# Ordering vectors
+left_levels  <- unique(dat$species_left[order(left_num)]) 
+right_levels <- unique(dat$species_right)
+
+# Common factor levels so layers combine cleanly
+all_levels <- c(left_levels, setdiff(right_levels, left_levels))
+
+lodes <- bind_rows(
+  transmute(dat, side = "Left",  stratum = species_left,  flow_id, value, cluster_left),
+  transmute(dat, side = "Right", stratum = species_right, flow_id, value, cluster_left)
+) %>%
+  mutate(
+    x_num   = ifelse(side == "Left", 1L, 2L),                         # 1 = Left, 2 = Right
+    stratum = factor(stratum, levels = all_levels, ordered = TRUE)
+  )
+
+
+ggplot(lodes, aes(x = x_num, stratum = stratum, alluvium = flow_id, y = value)) +
+  # Colored connections (by LEFT cluster)
+  geom_alluvium(aes(fill = cluster_left), width = 0.25, alpha = 0.85) +
+  scale_fill_manual(values = cluster_cols, name = "Cluster") +
+  
+  ggnewscale::new_scale("fill") +
+  
+  # RIGHT boxes (white with black borders)
+  geom_stratum(
+    data = dplyr::filter(lodes, x_num == 2L),
+    fill = "white", color = "black", width = 0.25
+  ) +
+  # LEFT boxes (colored by their own label using the derived palette)
+  geom_stratum(
+    data = dplyr::filter(lodes, x_num == 1L),
+    aes(fill = after_stat(stratum)), color = "black", width = 0.25
+  ) +
+  geom_text(
+    data = dplyr::filter(lodes, x_num %in% c(1L, 2L)),
+    stat = "stratum", aes(label = after_stat(stratum)), size = 3
+  ) +
+  scale_fill_manual(values = stratum_colors, guide = "none") +
+  
+  # Lock axis positions and labels
+  scale_x_continuous(breaks = c(1, 2), labels = c("Left", "Right"), expand = c(0.15, 0.05)) +
+  labs(y = "value", x = NULL) +
+  theme_minimal() +
+  theme(
+    panel.grid = element_blank(),
+    axis.text  = element_blank(),
+    axis.ticks = element_blank()
+  )
 ggsave("Sankey_plot_pm_ovary_vs_x species.tiff", units="in", width=12, height=13
        , dpi=300, compression = 'lzw')
+
+
+#Sankey plot for human fetal ovary
+
+
+data <- melt(df)
+data$X <- as.factor(data$X)
+dat <- data %>%
+  transmute(
+    species_left  = as.character(X),
+    species_right = as.character(variable),
+    value         = suppressWarnings(as.numeric(value))
+  ) 
+
+pm_left  <- mean(grepl("_pm", dat$species_left),  na.rm = TRUE)
+pm_right <- mean(grepl("_pm", dat$species_right), na.rm = TRUE)
+
+if (is.finite(pm_left) && is.finite(pm_right) && pm_left < pm_right) {
+  tmp <- dat$species_left
+  dat$species_left  <- dat$species_right
+  dat$species_right <- tmp
+}
+
+left_num <- as.integer(stringr::str_extract(dat$species_left, "\\d+$"))
+
+dat <- dat %>%
+  mutate(
+    cluster_left = case_when(
+      left_num %in% 1:4   ~ "epithelium",
+      left_num %in% 5:8   ~ "follicle I",
+      left_num %in% 9:12  ~ "follicle II",
+      left_num %in% 13:14 ~ "germ cell cyst",
+      left_num %in% 15:19 ~ "oocytes",
+      left_num == 20      ~ "neurons",
+      left_num %in% 21:22 ~ "muscles",
+      left_num %in% 23:25 ~ "follicle III",
+      left_num %in% 26:27 ~ "immune",
+      TRUE ~ "Unknown"
+    )
+  )
+
+cluster_cols <- c(
+  "epithelium"     = "#63A8FF",
+  "follicle I"     = "#F27676",
+  "follicle II"    = "#F4A300",  
+  "germ cell cyst" = "#21FF00",  
+  "oocytes"        = "#009F72",
+  "neurons"        = "#FFEF00",
+  "muscles"        = "#9B6BFF",
+  "follicle III"   = "#FFB6C1",
+  "immune"         = "#ADD8E6",
+  "unknown"        = "grey70"
+)
+
+# Left boxes use a per-stratum palette derived from cluster_cols
+stratum_colors <- dat %>%
+  distinct(species_left, cluster_left) %>%
+  mutate(color = cluster_cols[as.character(cluster_left)]) %>%
+  { setNames(.$color, .$species_left) }
+
+dat$flow_id <- seq_len(nrow(dat))
+
+# Ordering vectors
+left_levels  <- unique(dat$species_left[order(left_num)])  # pm1..pm27 order by suffix
+right_levels <- unique(dat$species_right)
+
+# Common factor levels so layers combine cleanly
+all_levels <- c(left_levels, setdiff(right_levels, left_levels))
+
+lodes <- bind_rows(
+  transmute(dat, side = "Left",  stratum = species_left,  flow_id, value, cluster_left),
+  transmute(dat, side = "Right", stratum = species_right, flow_id, value, cluster_left)
+) %>%
+  mutate(
+    x_num   = ifelse(side == "Left", 1L, 2L),                         # 1 = Left, 2 = Right
+    stratum = factor(stratum, levels = all_levels, ordered = TRUE)
+  )
+
+# ---- Sankey plot ----
+ggplot(lodes, aes(x = x_num, stratum = stratum, alluvium = flow_id, y = value)) +
+  # Colored connections (by LEFT cluster)
+  geom_alluvium(aes(fill = cluster_left), width = 0.25, alpha = 0.85) +
+  scale_fill_manual(values = cluster_cols, name = "Cluster") +
+  
+  ggnewscale::new_scale("fill") +
+  
+  # RIGHT boxes (white with black borders)
+  geom_stratum(
+    data = dplyr::filter(lodes, x_num == 2L),
+    fill = "white", color = "black", width = 0.25
+  ) +
+  # LEFT boxes (colored by their own label using the derived palette)
+  geom_stratum(
+    data = dplyr::filter(lodes, x_num == 1L),
+    aes(fill = after_stat(stratum)), color = "black", width = 0.25
+  ) +
+  
+  # ---- LABELS ----
+# Left labels (inside)
+geom_text(
+  data = dplyr::filter(lodes, x_num == 1L),
+  stat = "stratum", aes(label = after_stat(stratum)),
+  size = 3
+) +
+  # Right labels (outside with repel)
+  geom_text_repel(
+    data = dplyr::filter(lodes, x_num == 2L),
+    stat = "stratum", aes(label = after_stat(stratum)),
+    size = 3, nudge_x = 0.3, hjust = 0, direction = "y",
+    segment.size = 0.2
+  ) +
+  
+  scale_fill_manual(values = stratum_colors, guide = "none") +
+  
+  # Lock axis positions and labels
+  scale_x_continuous(breaks = c(1, 2),
+                     labels = c("Left", "Right"),
+                     expand = c(0.15, 0.4)) +
+  labs(y = "value", x = NULL) +
+  theme_minimal() +
+  theme(
+    panel.grid = element_blank(),
+    axis.text  = element_blank(),
+    axis.ticks = element_blank()
+  )
