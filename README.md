@@ -21,7 +21,6 @@ This repository contains scripts used for the manuscript "Molecular evidence for
     -   dplyr ≥ 1.1
     -   ggplot2 ≥ 3.4
     -   Matrix ≥ 1.5
-    -   SAMap (Python package), via reticulate or precomputed matrices
     -   reticulate ≥ 1.40.0
     -   plotly ≥ 4.10
     -   pheatmap ≥ 1.0
