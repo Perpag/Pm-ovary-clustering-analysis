@@ -217,7 +217,7 @@ ggplot(lodes, aes(x = x_num, stratum = stratum, alluvium = flow_id, y = value)) 
   ) +
   geom_text(
     data = dplyr::filter(lodes, x_num %in% c(1L, 2L)),
-    stat = "stratum", aes(label = after_stat(stratum)), size = 3
+    stat = "stratum", aes(label = after_stat(stratum)), size = 6, fontface="bold"
   ) +
   scale_fill_manual(values = stratum_colors, guide = "none") +
   
@@ -230,7 +230,7 @@ ggplot(lodes, aes(x = x_num, stratum = stratum, alluvium = flow_id, y = value)) 
     axis.text  = element_blank(),
     axis.ticks = element_blank()
   )
-ggsave("Sankey_plot_pm_ovary_vs_x species.tiff", units="in", width=12, height=13
+ggsave("Sankey_plot_pm_ovary_vs_x species.tiff", units="in", width=19, height=18
        , dpi=300, compression = 'lzw')
 
 
@@ -334,13 +334,13 @@ ggplot(lodes, aes(x = x_num, stratum = stratum, alluvium = flow_id, y = value)) 
 geom_text(
   data = dplyr::filter(lodes, x_num == 1L),
   stat = "stratum", aes(label = after_stat(stratum)),
-  size = 3
+  size = 6, fontface="bold"
 ) +
   # Right labels (outside with repel)
   geom_text_repel(
     data = dplyr::filter(lodes, x_num == 2L),
     stat = "stratum", aes(label = after_stat(stratum)),
-    size = 3, nudge_x = 0.3, hjust = 0, direction = "y",
+    size = 6, fontface="bold", nudge_x = 0.3, hjust = 0, direction = "y",
     segment.size = 0.2
   ) +
   
@@ -357,3 +357,5 @@ geom_text(
     axis.text  = element_blank(),
     axis.ticks = element_blank()
   )
+ggsave("Sankey_plot_pm_ovary_vs_x human_fetal.tiff", units="in", width=28, height=18
++        , dpi=300, compression = 'lzw')
