@@ -145,7 +145,7 @@ integration for cross-species single-cell atlas comparison.
 
 ### Python Environment
 
--   **samap**
+-   **SAMap**
 -   Tools: get_mapping_scores, GenePairFinder, sankey_plot, chord_plot,
     CellTypeTriangles, ParalogSubstitutions, FunctionalEnrichment,
     convert_eggnog_to_homologs, GeneTriangles
@@ -158,7 +158,7 @@ analysis and visualization of DE genes across germline clusters.
 ## Additional Dataset Analyses
 
 The `Clustering_analysis_of_hs_fetal_ovary_and_mm_pituitary_gland.R`
-script analyzes human fetal ovary and mouse pituitary datasets, using
+script analyzes human fetal ovary and mouse pituitary gland datasets, using
 the same Seurat-based workflow.
 
 ## Cell Ranger Mapping
