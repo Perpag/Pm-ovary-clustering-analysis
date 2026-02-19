@@ -19,15 +19,16 @@ ggplot(Supplementary_Data_2,
                size = 4,
                fill = "black") +
   
-  # mean ± SEM
-  stat_summary(fun.data = mean_se,
+   # mean ± SD 
+  stat_summary(fun.data = mean_sdl,
+               fun.args = list(mult = 1),
                geom = "errorbar",
                width = 0.1,
                size = 0.8) +
   
   ylab("diameter (µm)") +
   xlab("") +
-  theme_classic(base_size = 28) 
+  theme_classic(base_size = 28)
 
 ggsave("name.tiff", units="in", width=8, height=9, dpi=300, compression = 'lzw')
 
@@ -49,8 +50,9 @@ ggplot(Supplementary_Data_2,
                size = 4,
                fill = "black") +
   
-  # mean ± SEM
-  stat_summary(fun.data = mean_se,
+  # mean ± SD 
+  stat_summary(fun.data = mean_sdl,
+               fun.args = list(mult = 1),
                geom = "errorbar",
                width = 0.1,
                size = 0.8) +
@@ -80,15 +82,16 @@ ggplot(Supplementary_Data_2,
                size = 4,
                fill = "black") +
   
-  # mean ± SEM
-  stat_summary(fun.data = mean_se,
+  # mean ± SD 
+  stat_summary(fun.data = mean_sdl,
+               fun.args = list(mult = 1),
                geom = "errorbar",
                width = 0.1,
                size = 0.8) +
   
   ylab("diameter (µm)") +
   xlab("") +
-  theme_classic(base_size = 28) 
+  theme_classic(base_size = 28)
 
 ggsave("name.tiff", units="in", width=8, height=9, dpi=300, compression = 'lzw')
 
@@ -110,14 +113,14 @@ ggplot(Supplementary_Data_2,
                size = 4,
                fill = "black") +
   
-  # mean ± SEM
-  stat_summary(fun.data = mean_se,
+  # mean ± SD 
+  stat_summary(fun.data = mean_sdl,
+               fun.args = list(mult = 1),
                geom = "errorbar",
                width = 0.1,
                size = 0.8) +
   
-  
-  ylab("Volume [μm^3]") +
+  ylab("diameter (µm)") +
   xlab("") +
   theme_classic(base_size = 28)
 
@@ -148,15 +151,17 @@ ggplot(Supplementary_Data_2,
                size = 4,
                fill = "black") +
   
-  # mean ± SEM
-  stat_summary(fun.data = mean_se,
+   # mean ± SD 
+  stat_summary(fun.data = mean_sdl,
+               fun.args = list(mult = 1),
                geom = "errorbar",
-               width = 0.15,
+               width = 0.1,
                size = 0.8) +
   
   ylab("Volume [μm^3]") +
   xlab("") +
   theme_classic(base_size = 28)
+
 
 ggsave("name.tiff", units="in", width=10, height=9, dpi=300, compression = 'lzw')
 
@@ -185,14 +190,15 @@ ggplot(Supplementary_Data_2,
                size = 4,
                fill = "black") +
   
-  # mean ± SEM
-  stat_summary(fun.data = mean_se,
+  # mean ± SD 
+  stat_summary(fun.data = mean_sdl,
+               fun.args = list(mult = 1),
                geom = "errorbar",
-               width = 0.15,
+               width = 0.1,
                size = 0.8) +
   
   ylab("diameter (µm)") +
   xlab("") +
-  theme_classic(base_size = 28) 
+  theme_classic(base_size = 28)
 
 ggsave("name.tiff", units="in", width=10, height=9, dpi=300, compression = 'lzw')
