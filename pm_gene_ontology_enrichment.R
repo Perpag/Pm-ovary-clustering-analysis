@@ -18,18 +18,18 @@ colnames(gene2go) <- c("GeneID", "GO_Term")
 gene2go_list <- split(gene2go$GO_Term, gene2go$GeneID)
 
 # Separate upregulated and downregulated genes
-upregulated_genes <- Supplementary_file_4[Supplementary_file_4$log2FC > 0, ]
-downregulated_genes <- Supplementary_file_4[Supplementary_file_4$log2FC < 0, ]
+upregulated_genes <- Supplementary_Data_5[Supplementary_Data_5$log2FC > 0, ]
+downregulated_genes <- Supplementary_Data_5[Supplementary_Data_5$log2FC < 0, ]
 
 # Define Upregulated (log2FC > 0) and Downregulated (log2FC < 0)
-Supplementary_file_4$Regulation <- ifelse(deg_data$log2FC > 0, "Upregulated", "Downregulated")
+Supplementary_Data_5$Regulation <- ifelse(deg_data$log2FC > 0, "Upregulated", "Downregulated")
 
 # Create a gene factor list for topGO (1 = DEG, 0 = non-DEG)
 geneList <- factor(as.integer(gene2go$GeneID %in% Supplementary_file_4$GeneID))
 names(geneList) <- gene2go$GeneID
 
 # Check data
-head(Supplementary_file_4)
+head(Supplementary_Data_5)
 
 # Create topGO data object
 GOdata <- new("topGOdata", 
